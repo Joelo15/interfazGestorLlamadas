@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de Llamada · Consultorio Dental</title>
+<!-- Fuentes e Iconos Profesionales -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  :root {
+    --bg-overlay-1: rgba(6, 12, 20, 0.90);
+    --bg-overlay-2: rgba(8, 20, 32, 0.78);
+    --panel-glass: rgba(16, 32, 50, 0.55);
+    --panel-glass-strong: rgba(12, 26, 42, 0.72);
+    --panel-border: rgba(255, 255, 255, 0.10);
+    --panel-border-soft: rgba(255, 255, 255, 0.06);
+
+    --accent: #00e0a4;
+    --accent-2: #00b3ff;
+    --accent-glow: rgba(0, 224, 164, 0.45);
+    --accent-dark: #009a72;
+
+    --warn: #ff5c5c;
+    --warn-glow: rgba(255, 92, 92, 0.45);
+
+    --gold: #ffc233;
+    --gold-glow: rgba(255, 194, 51, 0.45);
+
+    --pearl: #fdfdfc;
+    --pearl-shadow: #c9d3d6;
+
+    --text: #f3f8fc;
+    --text-dim: #93a7b8;
+    --text-faint: #5e7285;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(0,224,164,0.10), transparent 45%),
+      radial-gradient(circle at 90% 15%, rgba(0,179,255,0.10), transparent 40%),
+      linear-gradient(var(--bg-overlay-1), var(--bg-overlay-2)),
+      url('https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat fixed;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 18px 70px;
+    min-height: 100vh;
+    margin: 0;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Partículas decorativas flotantes — puramente visuales, sin JS */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+  }
+  .orb.a { width: 340px; height: 340px; top: -120px; left: -100px; background: radial-gradient(circle, var(--accent-glow), transparent 70%); animation: float1 14s ease-in-out infinite; }
+  .orb.b { width: 300px; height: 300px; bottom: -100px; right: -80px; background: radial-gradient(circle, rgba(0,179,255,0.35), transparent 70%); animation: float2 18s ease-in-out infinite; }
+  .orb.c { width: 220px; height: 220px; top: 40%; right: 6%; background: radial-gradient(circle, var(--gold-glow), transparent 70%); animation: float1 20s ease-in-out infinite reverse; }
+
+  @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px,40px); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-40px,-25px); } }
+
+  /* ===== Encabezado ===== */
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+    max-width: 640px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(0,224,164,0.18), rgba(0,179,255,0.12));
+    border: 1px solid rgba(0, 224, 164, 0.35);
+    color: var(--accent);
+    padding: 7px 16px;
+    border-radius: 22px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    box-shadow: 0 4px 18px rgba(0,224,164,0.15);
+  }
+  .brand-badge i { font-size: 11px; }
+
+  h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 34px;
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    background: linear-gradient(135deg, #ffffff 30%, #b9d4e0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub { color: var(--text-dim); font-size: 15px; margin: 0; font-weight: 500; }
+
+  /* ===== Tarjeta de conexión ===== */
+  .card {
+    background: var(--panel-glass);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 1040px;
+    margin-bottom: 18px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 1;
+  }
+
+  .card label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .card label i { color: var(--accent); }
+
+  .card input[type="text"] {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(4, 10, 16, 0.55);
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: 'Plus Jakarta Sans', monospace;
+    transition: all 0.25s ease;
+  }
+  .card input[type="text"]::placeholder { color: var(--text-faint); }
+
+  .card input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0, 224, 164, 0.12);
+  }
+
+  .hint { font-size: 11.5px; color: var(--text-faint); margin-top: 10px; line-height: 1.5; }
+  .hint code { background: rgba(255,255,255,0.07); padding: 1px 6px; border-radius: 4px; color: var(--accent); }
+
+  /* ===== Controles ===== */
+  .controls {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 26px;
+    width: 100%;
+    max-width: 1040px;
+    position: relative;
+    z-index: 1;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-size: 14.5px;
+    font-weight: 700;
+    border-radius: 14px;
+    transition: all 0.25s cubic-bezier(.2,.9,.3,1.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    letter-spacing: 0.2px;
+  }
+
+  #startBtn {
+    background: linear-gradient(135deg, #00e0a4, #00b37a);
+    padding: 15px 24px;
+    flex: 2;
+    box-shadow: 0 10px 26px var(--accent-glow);
+  }
+  #startBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 32px var(--accent-glow); }
+  #startBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  #resetBtn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    padding: 15px 20px;
+    flex: 1;
+  }
+  #resetBtn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); transform: translateY(-1px); }
+
+  /* ===== Escenario principal: orbe + chat lado a lado ===== */
+  .stage {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 1040px;
+    align-items: stretch;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 860px) {
+    .stage { grid-template-columns: 1fr; }
+  }
+
+  /* --- Columna de voz --- */
+  .voice-panel {
+    background: var(--panel-glass-strong);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    padding: 32px 20px 26px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.4);
+  }
+
+  .voice-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    margin: 10px 0 22px;
+  }
+
+  /* Anillos concéntricos de energía alrededor del diente */
+  .ring-fx {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 190px; height: 190px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 224, 164, 0.18);
+    pointer-events: none;
+    animation: spinRing 16s linear infinite;
+  }
+  .ring-fx.r2 { width: 230px; height: 230px; border-color: rgba(0, 179, 255, 0.12); animation-duration: 22s; animation-direction: reverse; }
+
+  @keyframes spinRing { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+  /* ===== El diente 3D — todo vive en el ID para sobrevivir a className = '' ===== */
+  #mic-btn {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    background:
+      radial-gradient(circle at 34% 26%, #ffffff 0%, var(--pearl) 34%, #e4ecef 62%, var(--pearl-shadow) 100%);
+    box-shadow:
+      0 18px 40px rgba(0,0,0,0.55),
+      inset 0 -10px 18px rgba(120,140,150,0.35),
+      inset 0 8px 14px rgba(255,255,255,0.9),
+      0 0 0 6px rgba(255,255,255,0.04);
+    transition: transform 0.35s cubic-bezier(.2,.9,.3,1.4), box-shadow 0.35s ease;
+  }
+
+  /* Brillo especular tipo "diente pulido" */
+  #mic-btn::before {
+    content: "";
+    position: absolute;
+    top: 14%; left: 20%;
+    width: 46%; height: 26%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0));
+    border-radius: 50%;
+    filter: blur(1px);
+    transform: rotate(-18deg);
+    pointer-events: none;
+  }
+
+  /* Halo de estado detrás del diente */
+  #mic-btn::after {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    z-index: -1;
+    background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  #mic-btn i {
+    font-size: 46px;
+    background: linear-gradient(160deg, #00c48c, #008f66);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.5));
+  }
+
+  #mic-btn:hover:not(:disabled) {
+    transform: scale(1.06) translateY(-2px);
+  }
+  #mic-btn:hover:not(:disabled)::after { opacity: 1; }
+
+  #mic-btn:disabled {
+    filter: grayscale(0.7) brightness(0.75);
+    cursor: not-allowed;
+  }
+
+  /* Escuchando: aro rojo pulsante + diente "alerta" */
+  #mic-btn.listening {
+    animation: toothPulseRed 1.3s infinite;
+  }
+  #mic-btn.listening::after { opacity: 1; background: radial-gradient(circle, var(--warn-glow), transparent 70%); }
+  #mic-btn.listening i {
+    background: linear-gradient(160deg, #ff7a7a, #c0392b);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  @keyframes toothPulseRed {
+    0%   { box-shadow: 0 18px 40px rgba(0,0,0,0.55), inset 0 -10px 18px rgba(120,140,150,0.35), inset 0 8px 14px rgba(255,255,255,0.9), 0 0 0 0 var(--warn-glow); }
+    70%  { box-shadow: 0 18px 40px rgba(0,0,0,0.55), inset 0 -10px 18px rgba(120,140,150,0.35), inset 0 8px 14px rgba(255,255,255,0.9), 0 0 0 22px rgba(255,92,92,0); }
+    100% { box-shadow: 0 18px 40px rgba(0,0,0,0.55), inset 0 -10px 18px rgba(120,140,150,0.35), inset 0 8px 14px rgba(255,255,255,0.9), 0 0 0 0 rgba(255,92,92,0); }
+  }
+
+  /* Hablando: dorado, con brillo cálido */
+  #mic-btn.speaking {
+    animation: toothGlowGold 1.1s ease-in-out infinite;
+  }
+  #mic-btn.speaking::after { opacity: 1; background: radial-gradient(circle, var(--gold-glow), transparent 70%); }
+  #mic-btn.speaking i {
+    background: linear-gradient(160deg, #ffd166, #d48800);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  @keyframes toothGlowGold {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+  }
+
+  #status {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    min-height: 22px;
+    text-align: center;
+    max-width: 320px;
+  }
+  #status.error { color: #ff9d9d; }
+
+  .voice-panel .hint-mini {
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 260px;
+  }
+
+  .legend { display: flex; gap: 14px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-faint); }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .legend .dot-listen { background: var(--warn); }
+  .legend .dot-speak { background: var(--gold); }
+  .legend .dot-idle { background: var(--accent); }
+
+  /* --- Columna de chat (más grande y dinámica) --- */
+  .chat-panel {
+    background: var(--panel-glass-strong);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.4);
+    min-height: 560px;
+  }
+
+  .chat-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--panel-border-soft);
+  }
+  .chat-panel-head .title { display: flex; align-items: center; gap: 10px; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; }
+  .chat-panel-head .title i { color: var(--accent); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); animation: blink 1.6s infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  #log {
+    flex: 1;
+    width: 100%;
+    background: rgba(4, 10, 16, 0.55);
+    border: 1px solid var(--panel-border-soft);
+    border-radius: 18px;
+    padding: 20px;
+    min-height: 460px;
+    max-height: 68vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+  #log::-webkit-scrollbar { width: 8px; }
+  #log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; }
+  #log::-webkit-scrollbar-track { background: transparent; }
+
+  .msg {
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 12px 16px;
+    border-radius: 14px;
+    max-width: 82%;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    animation: msgIn 0.25s ease;
+  }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .msg.paciente {
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(0,224,164,0.20), rgba(0,224,164,0.08));
+    border: 1px solid rgba(0, 224, 164, 0.28);
+    color: #c3f7e5;
+  }
+
+  .msg.asistente {
+    align-self: flex-start;
+    background: linear-gradient(135deg, rgba(255,194,51,0.16), rgba(255,194,51,0.06));
+    border: 1px solid rgba(255, 194, 51, 0.28);
+    color: #ffedc2;
+  }
+
+  .msg.sistema {
+    align-self: center;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 12.5px;
+    text-align: center;
+    box-shadow: none;
+  }
+
+  /* ===== Detalle técnico ===== */
+  details {
+    width: 100%;
+    max-width: 1040px;
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    position: relative;
+    z-index: 1;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+  }
+  summary::marker { content: ""; }
+  summary i { color: var(--accent); }
+
+  #debugBox {
+    margin-top: 10px;
+    background: rgba(4, 10, 16, 0.65);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 14px;
+    max-height: 180px;
+    overflow: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 11.5px;
+    color: #9fb4c5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  footer.credit {
+    margin-top: 26px;
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: center;
+    max-width: 500px;
+    position: relative;
+    z-index: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="orb a"></div>
+<div class="orb b"></div>
+<div class="orb c"></div>
+
+<header>
+  <div class="brand-badge"><i class="fa-solid fa-tooth"></i> AI Voice Assistant</div>
+  <h1>Simulador de Llamada</h1>
+  <p class="sub">Consultorio Dental DentalF — Conectado en Tiempo Real</p>
+</header>
+
+<div class="card">
+  <label for="webhookUrl"><i class="fa-solid fa-link"></i> Webhook n8n (ngrok)</label>
+  <input type="text" id="webhookUrl" placeholder="https://tu-url.ngrok-free.dev/webhook/llamada">
+  <p class="hint">Asegúrate de que la URL termine en <code>/webhook/llamada</code> y que tu servidor local ejecute este archivo con protocolo HTTP.</p>
+</div>
+
+<div class="controls">
+  <button id="startBtn"><i class="fa-solid fa-phone-volume"></i> Iniciar llamada</button>
+  <button id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reiniciar</button>
+</div>
+
+<div class="stage">
+
+  <!-- Columna de voz: diente 3D -->
+  <div class="voice-panel">
+    <div class="voice-zone">
+      <div class="ring-fx"></div>
+      <div class="ring-fx r2"></div>
+      <button id="mic-btn" disabled aria-label="Hablar"><i class="fa-solid fa-tooth"></i></button>
+    </div>
+
+    <div id="status" role="status" aria-live="polite">Pulsa "Iniciar llamada" para comenzar</div>
+
+    <div class="legend">
+      <span><i class="dot-idle"></i> Listo</span>
+      <span><i class="dot-listen"></i> Escuchando</span>
+      <span><i class="dot-speak"></i> Respondiendo</span>
+    </div>
+
+    <p class="hint-mini">Pulsa el diente para hablar. El asistente escucha, procesa con IA y responde por voz — igual que una llamada real.</p>
+  </div>
+
+  <!-- Columna de chat: más grande y dinámica -->
+  <div class="chat-panel">
+    <div class="chat-panel-head">
+      <div class="title"><i class="fa-solid fa-comments"></i> Transcripción en vivo</div>
+      <span class="live-dot" title="En vivo"></span>
+    </div>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+<details>
+  <summary><i class="fa-solid fa-code"></i> Ver detalle técnico de la respuesta</summary>
+  <div id="debugBox">(sin datos todavía)</div>
+</details>
+
+<footer class="credit">Simulador de pruebas — Examen Complexivo · Yavirac</footer>
+
+<script>
+const webhookInput = document.getElementById('webhookUrl');
+const micBtn = document.getElementById('mic-btn');
+const statusEl = document.getElementById('status');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const logEl = document.getElementById('log');
+const debugBox = document.getElementById('debugBox');
+
+let recognition;
+let listening = false;
+let callActive = false;
+let callEnded = false;
+let micStream = null;
+let callId = null;
+
+// Detecta si la respuesta del asistente es una despedida final,
+// para dejar de escuchar en vez de seguir el bucle indefinidamente.
+function isFarewell(text) {
+  if (!text) return false;
+  const t = text.toLowerCase();
+  return t.includes('hasta luego') ||
+         (t.includes('excelente día') && t.includes('luego')) ||
+         t.includes('que tenga(s) un buen día');
+}
+
+function endCall(message) {
+  callActive = false;
+  callEnded = true;
+  micBtn.disabled = true;
+  micBtn.className = '';
+  addLog('sistema', message || 'Llamada finalizada.');
+  setStatus('✅ Llamada finalizada. Pulsa "Reiniciar" para una nueva llamada.');
+}
+
+webhookInput.value = localStorage.getItem('n8n_webhook_url') || '';
+webhookInput.addEventListener('change', () => {
+  localStorage.setItem('n8n_webhook_url', webhookInput.value.trim());
+});
+
+function addLog(who, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  const label = who === 'paciente' ? '👤 Tú (paciente)' : who === 'asistente' ? '🤖 Asistente Dental' : '⚙️ Sistema';
+  div.innerHTML = '<b>' + label + '</b>' + text;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setStatus(text, isError) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle('error', !!isError);
+}
+
+function setDebug(raw) {
+  debugBox.textContent = raw && raw.length ? raw.substring(0, 1500) : '(vacío)';
+}
+
+function speak(text, onEnd) {
+  micBtn.className = 'speaking';
+  setStatus('🔊 Asistente respondiendo...');
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'es-MX';
+  utter.rate = 1;
+  utter.onend = () => {
+    micBtn.className = '';
+    if (onEnd) onEnd();
+  };
+  speechSynthesis.speak(utter);
+}
+
+function extractReply(raw) {
+  const match = raw.match(/<Say[^>]*>([\s\S]*?)<\/Say>/i);
+  if (match) return match[1].trim();
+  try {
+    const j = JSON.parse(raw);
+    return (j.output || j.reply || '').trim();
+  } catch (e) {
+    return raw.trim();
+  }
+}
+
+function isInvalid(reply, raw) {
+  return !reply || reply.length > 2000 || raw.toLowerCase().includes('<!doctype');
+}
+
+async function callWebhook(speechText, url) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
+    body: JSON.stringify({ SpeechResult: speechText, callId: callId })
+  });
+  const raw = await res.text();
+  return raw;
+}
+
+async function sendToN8n(speechText, isRetry) {
+  const url = webhookInput.value.trim();
+  if (!url) {
+    setStatus('Falta la URL del webhook arriba.', true);
+    return;
+  }
+  setStatus(isRetry ? '⏳ Reintentando procesamiento...' : '⏳ Procesando voz...');
+  try {
+    const raw = await callWebhook(speechText, url);
+    setDebug(raw);
+    const reply = extractReply(raw);
+
+    if (isInvalid(reply, raw)) {
+      if (!isRetry) {
+        addLog('sistema', 'Reintentando por ligera demora de respuesta...');
+        await new Promise(r => setTimeout(r, 2500));
+        return sendToN8n(speechText, true);
+      }
+      micBtn.className = '';
+      setStatus('❌ Sin respuesta válida. Verifica tu consola o pulsa el micrófono.', true);
+      addLog('asistente', '(respuesta incompleta — revisa el detalle técnico)');
+      return;
+    }
+
+    addLog('asistente', reply);
+    const farewell = isFarewell(reply);
+    speak(reply, () => {
+      if (farewell) {
+        endCall('Llamada finalizada por el asistente.');
+      } else if (callActive) {
+        startListening();
+      }
+    });
+  } catch (err) {
+    micBtn.className = '';
+    setDebug(String(err));
+    setStatus('❌ Error al conectar con n8n. Revisa tu ngrok.', true);
+  }
+}
+
+function startListening() {
+  if (!recognition) return;
+  listening = true;
+  micBtn.className = 'listening';
+  setStatus('🎙️ Te escuchamos... habla ahora');
+  try { recognition.start(); } catch (e) { }
+}
+
+function initRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setStatus('❌ Utiliza Chrome o Edge para funciones de micrófono.', true);
+    return null;
+  }
+  const r = new SpeechRecognition();
+  r.lang = 'es-MX';
+  r.continuous = false;
+  r.interimResults = false;
+
+  r.onresult = (event) => {
+    const text = (event.results[0][0].transcript || '').trim();
+    listening = false;
+    micBtn.className = '';
+    if (!text) {
+      // No se detectó voz real: no llamamos al webhook (evita gastar
+      // cuota de la IA en peticiones vacías) y pedimos repetir.
+      setStatus('⚠️ No te escuché. Pulsa el micrófono e inténtalo de nuevo.', true);
+      return;
+    }
+    addLog('paciente', text);
+    sendToN8n(text, false);
+  };
+  r.onerror = (event) => {
+    listening = false;
+    micBtn.className = '';
+    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+      setStatus('⚠️ Micrófono bloqueado por el navegador. Permite el acceso arriba.', true);
+    } else {
+      setStatus('⚠️ Audio no detectado (' + event.error + '). Intenta pulsar de nuevo.', true);
+    }
+  };
+  r.onend = () => {
+    if (listening) { listening = false; micBtn.className = ''; }
+  };
+  return r;
+}
+
+async function requestMicPermissionOnce() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return true;
+  } catch (e) {
+    setStatus('❌ Sin acceso al micrófono. Permítelo en las configuraciones.', true);
+    return false;
+  }
+}
+
+function releaseMic() {
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+}
+
+startBtn.addEventListener('click', async () => {
+  const url = webhookInput.value.trim();
+  if (!url) {
+    alert('Por favor ingresa la URL de tu webhook n8n.');
+    return;
+  }
+  localStorage.setItem('n8n_webhook_url', url);
+
+  startBtn.disabled = true;
+  setStatus('Conectando dispositivos de audio...');
+  const granted = await requestMicPermissionOnce();
+  startBtn.disabled = false;
+  if (!granted) return;
+
+  recognition = initRecognition();
+  if (!recognition) return;
+
+  callActive = true;
+  callEnded = false;
+  callId = 'call-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  micBtn.disabled = false;
+  addLog('sistema', 'Llamada conectada. Pulsa el botón central para hablar.');
+  setStatus('Pulsa el micrófono para hablar');
+});
+
+resetBtn.addEventListener('click', () => {
+  callActive = false;
+  callEnded = false;
+  listening = false;
+  if (recognition) {
+    try { recognition.abort(); } catch (e) {}
+  }
+  releaseMic();
+  micBtn.className = '';
+  micBtn.disabled = true;
+  logEl.innerHTML = '';
+  setDebug('');
+  setStatus('Pulsa "Iniciar llamada" para comenzar');
+});
+
+micBtn.addEventListener('click', () => {
+  if (!listening) startListening();
+});
+
+window.addEventListener('beforeunload', releaseMic);
+</script>
+</body>
+</html>
